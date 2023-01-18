@@ -35,9 +35,6 @@ def tokenize_data(batch):
     attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
     output = bert_model(input_ids=torch.tensor(input_ids),
                    attention_mask=torch.tensor(attention_mask))
-    print(input_ids.shape)
-    print(output.pooler_output.shape)
-    print(output.last_hidden_state.shape)
     batch['cls_token'] = list(output.pooler_output)
     batch['start_token'] = list(output.last_hidden_state[:, 0, :])
     batch['avg_token'] = list(torch.mean(output.last_hidden_state, dim=1))
