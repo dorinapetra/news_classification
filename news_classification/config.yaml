@@ -1,0 +1,10 @@
+
+
+
+# model
+hidden_dim: 100
+
+# training
+dropout: 0.5
+batch_size: 32
+epochs: 10
