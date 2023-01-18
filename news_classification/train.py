@@ -147,7 +147,7 @@ def main(config_file):
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
-        output_dim=len(class_label),
+        output_dim=len(class_label.names),
         hidden_dim=cfg.hidden_dim,
         dropout_value=cfg.dropout
     )
