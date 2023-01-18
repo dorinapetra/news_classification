@@ -1,8 +1,13 @@
 
-
-
+# data
+preprocessed_dataset_path: /dir
+load_tokenized_data: False
+# cls_token, avg_token, start_token
+input_name: cls_token
+output_name: label
 # model
 hidden_dim: 100
+
 
 # training
 dropout: 0.5

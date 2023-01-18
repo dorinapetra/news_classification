@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import yaml
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
@@ -23,9 +23,18 @@ def get_config_from_yaml(yaml_file):
     return config
 
 
-def _process_data_target(batch):
+def _process_data(batch, tokenizer, model):
     batch['year'] = batch['date_of_creation'].year
     batch['label'] = str(batch['year']) + '-' + batch['domain']
+
+    inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
+
+    output = model(input_ids=torch.tensor(inputs.input_ids).int().unsqueeze(0),
+                   attention_mask=torch.tensor(inputs.attention_mask).int().unsqueeze(0))
+    batch['cls_token'] = list(output.pooler_output[0])
+    batch['start_token'] = list(output.last_hidden_state[0][0])
+    batch['avg_token'] = list(torch.mean(output.last_hidden_state[0], dim=0).shape)
+
     return batch
 
 
@@ -33,7 +42,10 @@ def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
-    dataset = dataset.map(_process_data_target, batched=False)
+    tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+    bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+    bert_model.eval()
+    dataset = dataset.map(lambda x: _process_data(x, tokenizer, bert_model), batched=False)
     if descartes:
         dataset = dataset.class_encode_column("label")
         class_label = dataset['train'].features['label']
@@ -43,51 +55,6 @@ def load_data(descartes=True):
         dataset = dataset.class_encode_column('year')
     return dataset, class_label
 
-
-def get_expected_output(dataset, output_vocab):
-    data = dataset.to_pandas()
-    y = torch.empty(len(data))
-    for i in range(len(data)):
-        y[i] = output_vocab[data[3][i].rstrip("\n")]
-    y = y.type(torch.LongTensor)
-    return y
-
-
-def get_encoded_wordpieces(dataset, model, tokenizer):
-    batch_size = 50
-    data = dataset.to_pandas()
-    X = torch.empty([len(data), 768])
-    batch_iter = BatchedIterator(data['article'].tolist(), data['label'].tolist(), batch_size)
-    for bi, (batch_x, batch_y) in enumerate(batch_iter.iterate_once()):
-        tokens = []
-        index = []
-        for i, article in enumerate(batch_x):
-            article_tokens = tokenizer(article, max_length=512)['input_ids']
-            tokens.extend([article_tokens])
-            index.extend([0])
-        # padding
-        length = max(map(len, tokens))
-        padded = torch.tensor([xi + [0] * (length - len(xi)) for xi in tokens])
-        # masking
-        mask = torch.where(padded > 0, torch.ones(padded.shape), torch.zeros(padded.shape))
-        with torch.no_grad():
-            output = model(input_ids=padded, attention_mask=mask)
-        # X[bi * batch_size:bi * batch_size + len(batch_x)] = output[0][np.arange(len(output[0])), index]
-        X[bi * batch_size:bi * batch_size + len(batch_x)] = output[1]
-    return X
-
-
-def get_bert_output(dataset):
-    tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-    bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-    bert_model.eval()
-    train_X = get_encoded_wordpieces(dataset['train'], bert_model, tokenizer)
-    # train_y = get_expected_output(dataset['train'], class_label)
-    train_y = dataset['train']['label']
-    dev_X = get_encoded_wordpieces(dataset['validation'], bert_model, tokenizer)
-    # dev_y = get_expected_output(dataset['validation'], class_label)
-    dev_y = dataset['validation']['label']
-    return train_X, train_y, dev_X, dev_y
 
 
 def learn(network, train_X, train_y, dev_X, dev_y, epochs, batch_size):
@@ -160,8 +127,16 @@ def main(config_file):
     model_result = {}
 
     dataset, class_label = load_data()
+    if cfg.load_tokenized_data:
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+    else:
+        dataset, class_label = load_data()
+        dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
-    train_X, train_y, dev_X, dev_y = get_bert_output(dataset)
+    train_X = torch.tensor(dataset['train'][cfg.input_name])
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    train_y = torch.tensor(dataset['train'][cfg.output_name])
+    dev_y = torch.tensor(dataset['validation'][cfg.output_name])
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
