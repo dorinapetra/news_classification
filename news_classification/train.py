@@ -33,8 +33,8 @@ def tokenize_data(batch):
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
     input_ids = torch.tensor(inputs.input_ids).to('cuda')
     attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
-    output = bert_model(input_ids=torch.tensor(input_ids).int().unsqueeze(0),
-                   attention_mask=torch.tensor(attention_mask).int().unsqueeze(0))
+    output = bert_model(input_ids=torch.tensor(input_ids),
+                   attention_mask=torch.tensor(attention_mask))
     print(input_ids.shape)
     print(output.pooler_output.shape)
     print(output.last_hidden_state.shape)
