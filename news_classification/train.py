@@ -28,8 +28,8 @@ def _process_data(batch, tokenizer, model):
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
-    input_ids = inputs.input_ids.to('cuda')
-    attention_mask = inputs.attention_mask.to('cuda')
+    input_ids = torch.tensor(inputs.input_ids).to('cuda')
+    attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
     output = model(input_ids=torch.tensor(input_ids).int().unsqueeze(0),
                    attention_mask=torch.tensor(attention_mask).int().unsqueeze(0))
     batch['cls_token'] = list(output.pooler_output[0])
