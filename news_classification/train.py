@@ -38,9 +38,9 @@ def tokenize_data(batch):
     print(input_ids.shape)
     print(output.pooler_output.shape)
     print(output.last_hidden_state.shape)
-    batch['cls_token'] = list(output.pooler_output[0])
-    batch['start_token'] = list(output.last_hidden_state[0][0])
-    batch['avg_token'] = list(torch.mean(output.last_hidden_state[0], dim=0).shape)
+    batch['cls_token'] = list(output.pooler_output)
+    batch['start_token'] = list(output.last_hidden_state[:][0])
+    batch['avg_token'] = list(torch.mean(output.last_hidden_state, dim=1).shape)
 
     return batch
 
