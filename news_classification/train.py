@@ -28,9 +28,10 @@ def _process_data(batch, tokenizer, model):
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
-
-    output = model(input_ids=torch.tensor(inputs.input_ids).int().unsqueeze(0),
-                   attention_mask=torch.tensor(inputs.attention_mask).int().unsqueeze(0))
+    input_ids = inputs.input_ids.to('cuda')
+    attention_mask = inputs.attention_mask.to('cuda')
+    output = model(input_ids=torch.tensor(input_ids).int().unsqueeze(0),
+                   attention_mask=torch.tensor(attention_mask).int().unsqueeze(0))
     batch['cls_token'] = list(output.pooler_output[0])
     batch['start_token'] = list(output.last_hidden_state[0][0])
     batch['avg_token'] = list(torch.mean(output.last_hidden_state[0], dim=0).shape)
@@ -45,6 +46,7 @@ def load_data(descartes=True):
     tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
     bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
     bert_model.eval()
+    bert_model.to('cuda')
     dataset = dataset.map(lambda x: _process_data(x, tokenizer, bert_model), batched=False)
     if descartes:
         dataset = dataset.class_encode_column("label")
