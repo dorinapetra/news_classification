@@ -11,8 +11,8 @@ from dotmap import DotMap
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
 
-from news_classification.batched_iterator import BatchedIterator
-from news_classification.classifier import SimpleClassifier
+from batched_iterator import BatchedIterator
+from classifier import SimpleClassifier
 
 
 def get_config_from_yaml(yaml_file):
