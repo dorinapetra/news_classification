@@ -23,31 +23,39 @@ def get_config_from_yaml(yaml_file):
     return config
 
 
-def _process_data(batch, tokenizer, model):
+def _process_data(batch):
     batch['year'] = batch['date_of_creation'].year
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
+    return batch
+
+def tokenize_data(batch):
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
     input_ids = torch.tensor(inputs.input_ids).to('cuda')
     attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
-    output = model(input_ids=torch.tensor(input_ids).int().unsqueeze(0),
+    output = bert_model(input_ids=torch.tensor(input_ids).int().unsqueeze(0),
                    attention_mask=torch.tensor(attention_mask).int().unsqueeze(0))
+    print(input_ids.shape)
+    print(output.pooler_output.shape)
+    print(output.last_hidden_state.shape)
     batch['cls_token'] = list(output.pooler_output[0])
     batch['start_token'] = list(output.last_hidden_state[0][0])
     batch['avg_token'] = list(torch.mean(output.last_hidden_state[0], dim=0).shape)
 
     return batch
 
+tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+bert_model.eval()
 
 def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
-    tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-    bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-    bert_model.eval()
+
     bert_model.to('cuda')
-    dataset = dataset.map(lambda x: _process_data(x, tokenizer, bert_model), batched=False)
+    dataset = dataset.map(lambda x: _process_data(x), batched=False)
+    dataset = dataset.map(lambda x: tokenize_data(x), batched=True, batch_size=50)
     if descartes:
         dataset = dataset.class_encode_column("label")
         class_label = dataset['train'].features['label']
