@@ -62,7 +62,7 @@ def get_encoded_wordpieces(dataset, model, tokenizer):
         tokens = []
         index = []
         for i, article in enumerate(batch_x):
-            article_tokens = tokenizer(article)['input_ids']
+            article_tokens = tokenizer(article, max_length=512)['input_ids']
             tokens.extend([article_tokens])
             index.extend([0])
         # padding
