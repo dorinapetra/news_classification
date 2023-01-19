@@ -10,6 +10,7 @@ from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
+from tqdm import tqdm
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
@@ -83,7 +84,7 @@ def learn(network, train_X, train_y, dev_X, dev_y, epochs, batch_size):
 
     for epoch in range(epochs):
         # training loop
-        for bi, (batch_x, batch_y) in enumerate(train_iter.iterate_once()):
+        for bi, (batch_x, batch_y) in tqdm(enumerate(train_iter.iterate_once())):
             y_out = network(batch_x)
             loss = criterion(y_out, batch_y)
             optimizer.zero_grad()
