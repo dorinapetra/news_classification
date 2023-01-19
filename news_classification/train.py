@@ -50,10 +50,6 @@ def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
-    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
-    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
-    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
-    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
     bert_model.to('cuda')
     dataset = dataset.map(lambda x: _process_data(x), batched=False)
@@ -150,6 +146,11 @@ def main(config_file):
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
+    
+    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
+    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
+    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
+    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
     train_X = torch.tensor(dataset['train'][cfg.input_name])
     dev_X = torch.tensor(dataset['validation'][cfg.input_name])
