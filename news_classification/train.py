@@ -134,7 +134,6 @@ def main(config_file):
     result = {"start_time": datetime.now()}
     model_result = {}
 
-    dataset, class_label = load_data()
     if cfg.load_tokenized_data:
         dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
     else:
