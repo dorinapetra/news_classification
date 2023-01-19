@@ -50,6 +50,9 @@ def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
+    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
+    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
+    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
     bert_model.to('cuda')
     dataset = dataset.map(lambda x: _process_data(x), batched=False)
