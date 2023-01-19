@@ -10,6 +10,8 @@ hidden_dim: 100
 
 
 # training
+training_dir: /dir
 dropout: 0.5
 batch_size: 32
 epochs: 10
+patience: 7

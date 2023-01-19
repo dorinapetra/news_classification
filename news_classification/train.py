@@ -65,24 +65,26 @@ def load_data(descartes=True):
 
 
 
-def learn(network, train_X, train_y, dev_X, dev_y, epochs, batch_size):
+def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(network.parameters())
 
-    train_iter = BatchedIterator(train_X, train_y, batch_size)
+    train_iter = BatchedIterator(train_X, train_y, cfg.batch_size)
 
     all_train_loss = []
     all_dev_loss = []
+    all_test_loss = []
     all_train_acc = []
     all_dev_acc = []
+    all_test_acc = []
 
-    patience = 7
+    patience = cfg.patience
     epochs_no_improve = 0
     min_loss = np.Inf
     early_stopping = False
     best_epoch = 0
 
-    for epoch in range(epochs):
+    for epoch in range(cfg.epochs):
         # training loop
         for bi, (batch_x, batch_y) in tqdm(enumerate(train_iter.iterate_once())):
             y_out = network(batch_x)
@@ -113,7 +115,7 @@ def learn(network, train_X, train_y, dev_X, dev_y, epochs, batch_size):
             epochs_no_improve = 0
             min_loss = dev_loss
             best_epoch = epoch
-            torch.save(network, os.getcwd() + "/model.pt")
+            torch.save(network, os.path.join(cfg.training_dir + "/model.pt"))
         else:
             epochs_no_improve += 1
             if epochs_no_improve == patience:
@@ -122,8 +124,13 @@ def learn(network, train_X, train_y, dev_X, dev_y, epochs, batch_size):
         if early_stopping:
             break
 
-    # TODO test
-    return all_train_acc[best_epoch], all_train_loss[best_epoch], all_dev_acc[best_epoch], all_dev_loss[best_epoch]
+    test_out = network(test_X)
+    test_loss = criterion(test_out, test_y)
+    test_pred = test_out.max(axis=1)[1]
+    test_acc = float(torch.eq(test_pred, test_y).sum().float() / len(test_X))
+    test_loss_v = test_loss.item()
+
+    return all_train_acc[best_epoch], all_train_loss[best_epoch], all_dev_acc[best_epoch], all_dev_loss[best_epoch], test_acc, test_loss_v
 
 
 @click.command()
@@ -142,8 +149,10 @@ def main(config_file):
 
     train_X = torch.tensor(dataset['train'][cfg.input_name])
     dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    test_X = torch.tensor(dataset['test'][cfg.input_name])
     train_y = torch.tensor(dataset['train'][cfg.output_name])
     dev_y = torch.tensor(dataset['validation'][cfg.output_name])
+    test_y = torch.tensor(dataset['test'][cfg.output_name])
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
@@ -152,15 +161,16 @@ def main(config_file):
         dropout_value=cfg.dropout
     )
 
-    train_acc, train_loss, dev_acc, dev_loss = learn(model, train_X, train_y, dev_X, dev_y, epochs=cfg.epochs,
-                                                     batch_size=cfg.batch_size)
+    train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = learn(model, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
     result["train_acc"] = train_acc
     result["train_loss"] = train_loss
     result["dev_acc"] = dev_acc
     result["dev_loss"] = dev_loss
+    result["test_acc"] = test_acc
+    result["test_loss"] = test_loss
     result["training"] = model_result
-    with open(os.getcwd() + "/result.yaml", 'w+') as file:
+    with open(os.path.join(cfg.training_dir , "/result.yaml"), 'w+') as file:
         yaml.dump(result, file)
 
 
