@@ -51,6 +51,7 @@ def load_data(descartes=True):
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
     dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
+    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
     dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
     dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
