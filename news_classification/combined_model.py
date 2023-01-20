@@ -18,7 +18,7 @@ class CombinedModel(torch.nn.Module):
 
     def forward(self, x):
         x = nn.ReLU()(self.hidden(x))  # activation function for hidden layer
-        x_out = nn.Softmax(self.out(x))
+        x_out = F.softmax(self.out(x))
         x_out2 = self.out2(x)
         return x_out, x_out2
 
