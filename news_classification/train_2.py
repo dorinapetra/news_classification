@@ -107,6 +107,14 @@ def main(config_file):
     dev_y2 = dataset['validation']['year']
     test_y = dataset['test']['domain']
 
+    train_y2 -= train_y2.min(1, keepdim=True)[0]
+    train_y2 /= train_y2.max(1, keepdim=True)[0]
+
+    dev_y2 -= train_y2.min(1, keepdim=True)[0]
+    dev_y2 /= train_y2.max(1, keepdim=True)[0]
+
+
+
     # model = SimpleClassifier(
     #     input_dim=train_X.size(1),
     #     output_dim=len(class_label.names),
