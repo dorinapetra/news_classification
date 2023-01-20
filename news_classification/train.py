@@ -141,9 +141,8 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-            ['date_of_creation']).with_format("torch", device=device)
+            ['date_of_creation']).with_format("torch", device='cuda')
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
