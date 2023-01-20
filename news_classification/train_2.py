@@ -76,7 +76,8 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).with_format("torch", device=device)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
@@ -88,14 +89,23 @@ def main(config_file):
 
     dataset = dataset.class_encode_column('domain')
 
-    train_X = torch.tensor(dataset['train'][cfg.input_name]).to('cuda')
-    dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to('cuda')
-    test_X = torch.tensor(dataset['test'][cfg.input_name]).to('cuda')
-    train_y1 = torch.tensor(dataset['train']['domain']).to('cuda')
-    train_y2 = torch.tensor(dataset['train']['year']).to('cuda')
-    dev_y1 = torch.tensor(dataset['validation']['domain']).to('cuda')
-    dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
-    test_y = torch.tensor(dataset['test']['domain']).to('cuda')
+    # train_X = torch.tensor(dataset['train'][cfg.input_name]).to('cuda')
+    # dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to('cuda')
+    # test_X = torch.tensor(dataset['test'][cfg.input_name]).to('cuda')
+    # train_y1 = torch.tensor(dataset['train']['domain']).to('cuda')
+    # train_y2 = torch.tensor(dataset['train']['year']).to('cuda')
+    # dev_y1 = torch.tensor(dataset['validation']['domain']).to('cuda')
+    # dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
+    # test_y = torch.tensor(dataset['test']['domain']).to('cuda')
+
+    train_X = dataset['train'][cfg.input_name]
+    dev_X = dataset['validation'][cfg.input_name]
+    test_X = dataset['test'][cfg.input_name]
+    train_y1 = dataset['train']['domain']
+    train_y2 = dataset['train']['year']
+    dev_y1 = dataset['validation']['domain']
+    dev_y2 = dataset['validation']['year']
+    test_y = dataset['test']['domain']
 
     # model = SimpleClassifier(
     #     input_dim=train_X.size(1),
