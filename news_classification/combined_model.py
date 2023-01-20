@@ -81,7 +81,7 @@ class CombinedModel(torch.nn.Module):
                 epochs_no_improve = 0
                 min_loss = dev_loss
                 best_epoch = epoch
-                torch.save(self, os.path.join(cfg.training_dir + "/model.pt"))
+                torch.save(self, os.path.join(cfg.training_dir + "model.pt"))
             else:
                 epochs_no_improve += 1
                 if epochs_no_improve == patience:
