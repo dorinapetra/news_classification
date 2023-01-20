@@ -73,10 +73,8 @@ def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
 
     all_train_loss = []
     all_dev_loss = []
-    all_test_loss = []
     all_train_acc = []
     all_dev_acc = []
-    all_test_acc = []
 
     patience = cfg.patience
     epochs_no_improve = 0
