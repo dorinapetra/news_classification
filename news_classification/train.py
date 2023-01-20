@@ -155,35 +155,37 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+                        ['date_of_creation']).with_format("torch", device='cuda')
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
-    dataset = dataset.remove_columns(['label'])
-    dataset = dataset.map(lambda x: _add_label(x), batched=False)
-    dataset = dataset.class_encode_column('label')
+    #dataset = dataset.remove_columns(['label'])
+    #dataset = dataset.map(lambda x: _add_label(x), batched=False)
+    #dataset = dataset.class_encode_column('label')
     class_label = dataset['train'].features['label']
 
-    train_X = torch.tensor(dataset['train'][cfg.input_name])
-    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
-    test_X = torch.tensor(dataset['test'][cfg.input_name])
-    train_y = torch.tensor(dataset['train'][cfg.output_name])
-    dev_y = torch.tensor(dataset['validation'][cfg.output_name])
-    test_y = torch.tensor(dataset['test'][cfg.output_name])
-    # train_X = dataset['train'][cfg.input_name]
-    # dev_X = dataset['validation'][cfg.input_name]
-    # test_X = dataset['test'][cfg.input_name]
-    # train_y = dataset['train'][cfg.output_name]
-    # dev_y = dataset['validation'][cfg.output_name]
-    # test_y = dataset['test'][cfg.output_name]
+    #train_X = torch.tensor(dataset['train'][cfg.input_name])
+    #dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    #test_X = torch.tensor(dataset['test'][cfg.input_name])
+    #train_y = torch.tensor(dataset['train'][cfg.output_name])
+    #dev_y = torch.tensor(dataset['validation'][cfg.output_name])
+    #test_y = torch.tensor(dataset['test'][cfg.output_name])
+    train_X = dataset['train'][cfg.input_name]
+    dev_X = dataset['validation'][cfg.input_name]
+    test_X = dataset['test'][cfg.input_name]
+    train_y = dataset['train'][cfg.output_name]
+    dev_y = dataset['validation'][cfg.output_name]
+    test_y = dataset['test'][cfg.output_name]
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
         output_dim=len(class_label.names),
         hidden_dim=cfg.hidden_dim,
         dropout_value=cfg.dropout
-    )
+    ).to('cuda')
 
     train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = learn(model, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
