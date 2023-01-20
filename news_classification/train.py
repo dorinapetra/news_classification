@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import yaml
-from datasets import load_dataset, DatasetDict
+from datasets import load_dataset, DatasetDict, Dataset
 from dotmap import DotMap
 from torch import nn
 from tqdm import tqdm
@@ -157,9 +157,11 @@ def main(config_file):
 
     if cfg.load_tokenized_data:
         #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-                        ['date_of_creation']).with_format("torch", device='cuda')
+        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+        #                ['date_of_creation']).with_format("torch", device='cuda')
         train_df, valid_df, test_df = load_train_valid_test(config_file)
+        dataset = DatasetDict()
+        dataset['train'] = Dataset.from_pandas(train_df)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
