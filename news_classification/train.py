@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from datetime import datetime
 
 import click
@@ -10,8 +9,8 @@ import yaml
 from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
 from torch import nn
-from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModel
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
@@ -27,6 +26,11 @@ def get_config_from_yaml(yaml_file):
 
 def _process_data(batch):
     batch['year'] = batch['date_of_creation'].year
+    batch['label'] = str(batch['year']) + '-' + batch['domain']
+
+    return batch
+
+def _add_label(batch):
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
     return batch
@@ -158,7 +162,7 @@ def main(config_file):
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
     dataset = dataset.remove_columns(['label'])
-    dataset = dataset.map(lambda x: _process_data(x), batched=False)
+    dataset = dataset.map(lambda x: _add_label(x), batched=False)
     dataset = dataset.class_encode_column('label')
     class_label = dataset['train'].features['label']
 
