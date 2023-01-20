@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
-from news_classification.combined_model import CombinedModel
+from combined_model import CombinedModel
 
 
 def get_config_from_yaml(yaml_file):
