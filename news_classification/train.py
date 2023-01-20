@@ -52,6 +52,16 @@ def load_data(descartes=True):
     dataset = dataset.remove_columns(['title', 'lead', 'tags', 'url'])
     dataset = dataset.filter(lambda x: x["date_of_creation"] != None)
 
+    df = dataset['train'].to_pandas()
+    df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
+    labels_to_remove = df_counted[df_counted.uuid < 2000]['label'].to_list()
+
+    dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
+    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
+    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
+    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
+    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
+
     bert_model.to('cuda')
     dataset = dataset.map(lambda x: _process_data(x), batched=False)
     dataset = dataset.map(lambda x: tokenize_data(x), batched=True, batch_size=50)
@@ -146,15 +156,6 @@ def main(config_file):
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
-    df = dataset['train'].to_pandas()
-    df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
-    labels_to_remove = df_counted[df_counted.uuid < 2000]['label'].to_list()
-
-    dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
-    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
-    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
-    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
-    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
     dataset = dataset.remove_columns(['label'])
     dataset = dataset.map(lambda x: _process_data(x), batched=False)
