@@ -7,7 +7,7 @@ from datasets import DatasetDict
 
 def convert_dataset_to_jsonl(path):
     dataset = DatasetDict.load_from_disk(path)
-    df = dataset.to_pandas()
+    df = dataset['train'].to_pandas()
     train, validate, test = np.split(df.sample(frac=1, random_state=123),
                                      [int(0.7 * len(df)),
                                       int((0.7 + 0.15) * len(df))])
