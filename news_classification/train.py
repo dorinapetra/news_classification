@@ -14,7 +14,7 @@ from transformers import AutoTokenizer, AutoModel
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
-from news_classification.create_split import convert_dataset_to_jsonl, load_train_valid_test
+from create_split import convert_dataset_to_jsonl, load_train_valid_test
 
 
 def get_config_from_yaml(yaml_file):
