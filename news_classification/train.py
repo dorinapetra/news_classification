@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from datetime import datetime
 
 import click
@@ -144,11 +145,20 @@ def main(config_file):
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
-    
+    df = dataset['train'].to_pandas()
+    df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
+    labels_to_remove = df_counted[df_counted.uuid < 2000]['label'].to_list()
+
+    dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
     dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
     dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
     dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
     dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
+
+    dataset = dataset.remove_columns(['label'])
+    dataset = dataset.map(lambda x: _process_data(x), batched=False)
+    dataset = dataset.class_encode_column('label')
+    class_label = dataset['train'].features['label']
 
     train_X = torch.tensor(dataset['train'][cfg.input_name])
     dev_X = torch.tensor(dataset['validation'][cfg.input_name])
