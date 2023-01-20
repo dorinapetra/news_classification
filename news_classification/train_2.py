@@ -108,10 +108,10 @@ def main(config_file):
     test_y = dataset['test']['domain']
 
     train_y2 -= train_y2.min()
-    train_y2 /= train_y2.max()
+    train_y2 = train_y2.type(torch.FloatTensor) / train_y2.max()
 
     dev_y2 -= train_y2.min()
-    dev_y2 /= train_y2.max()
+    dev_y2 = dev_y2.type(torch.FloatTensor) / train_y2.max()
 
 
 
