@@ -18,7 +18,7 @@ class CombinedModel(torch.nn.Module):
 
     def forward(self, x):
         x = nn.ReLU()(self.hidden(x))  # activation function for hidden layer
-        x_out = F.softmax(self.out(x))
+        x_out = nn.Softmax(self.out(x))
         x_out2 = self.out2(x)
         return x_out, x_out2
 
@@ -45,8 +45,8 @@ class CombinedModel(torch.nn.Module):
             # training loop
             for bi, (batch_x, batch_y1, batch_y2) in tqdm(enumerate(train_iter.iterate_once())):
                 y_out_1, y_out_2 = self.forward(batch_x)
-                loss1 = loss_func(y_out_1, batch_y1)
-                loss2 = loss_func2(y_out_2, batch_y2)
+                loss1 = loss_func(y_out_1, batch_y1.unsqueeze(1))
+                loss2 = loss_func2(y_out_2, batch_y2.unsqueeze(1))
                 loss_total = loss1 + loss2
                 optimizer.zero_grad()
                 loss_total.backward()
@@ -54,8 +54,8 @@ class CombinedModel(torch.nn.Module):
 
             # one train epoch finished, evaluate on the train and the dev set (NOT the test)
             train_out_1, train_out_2 = self.forward(train_X)
-            train_loss_1 = loss_func(train_out_1, train_y1)
-            train_loss_2 = loss_func2(train_out_2, train_y2)
+            train_loss_1 = loss_func(train_out_1, train_y1.unsqueeze(1))
+            train_loss_2 = loss_func2(train_out_2, train_y2.unsqueeze(1))
             train_loss = train_loss_1 + train_loss_2
             all_train_loss.append(train_loss.item())
             train_pred_1 = train_out_1.max(axis=1)[1]
@@ -63,8 +63,8 @@ class CombinedModel(torch.nn.Module):
             all_train_acc.append(train_acc_1)
 
             dev_out_1, dev_out_2 = self.forward(dev_X)
-            dev_loss_1 = loss_func(dev_out_1, dev_y1)
-            dev_loss_2 = loss_func2(dev_out_2, dev_y2)
+            dev_loss_1 = loss_func(dev_out_1, dev_y1.unsqueeze(1))
+            dev_loss_2 = loss_func2(dev_out_2, dev_y2.unsqueeze(1))
             dev_loss = dev_loss_1 + dev_loss_2
             all_dev_loss.append(dev_loss.item())
             dev_pred = dev_out_1.max(axis=1)[1]
