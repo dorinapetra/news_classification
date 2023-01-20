@@ -77,7 +77,7 @@ def main(config_file):
 
     if cfg.load_tokenized_data:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).with_format("torch", device=device)
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device=device)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
@@ -97,8 +97,6 @@ def main(config_file):
     # dev_y1 = torch.tensor(dataset['validation']['domain']).to('cuda')
     # dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
     # test_y = torch.tensor(dataset['test']['domain']).to('cuda')
-
-    dataset = dataset.remove_columns(['date_of_creation'])
 
     train_X = dataset['train'][cfg.input_name]
     dev_X = dataset['validation'][cfg.input_name]
