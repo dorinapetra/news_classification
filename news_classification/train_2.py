@@ -88,14 +88,14 @@ def main(config_file):
 
     dataset = dataset.class_encode_column('domain')
 
-    train_X = torch.tensor(dataset['train'][cfg.input_name])
-    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
-    test_X = torch.tensor(dataset['test'][cfg.input_name])
-    train_y1 = torch.tensor(dataset['train']['domain'])
-    train_y2 = torch.tensor(dataset['train']['year'])
-    dev_y1 = torch.tensor(dataset['validation']['domain'])
-    dev_y2 = torch.tensor(dataset['validation']['year'])
-    test_y = torch.tensor(dataset['test']['domain'])
+    train_X = torch.tensor(dataset['train'][cfg.input_name]).to('cuda')
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to('cuda')
+    test_X = torch.tensor(dataset['test'][cfg.input_name]).to('cuda')
+    train_y1 = torch.tensor(dataset['train']['domain']).to('cuda')
+    train_y2 = torch.tensor(dataset['train']['year']).to('cuda')
+    dev_y1 = torch.tensor(dataset['validation']['domain']).to('cuda')
+    dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
+    test_y = torch.tensor(dataset['test']['domain']).to('cuda')
 
     # model = SimpleClassifier(
     #     input_dim=train_X.size(1),
@@ -104,7 +104,7 @@ def main(config_file):
     #     dropout_value=cfg.dropout
     # )
 
-    model = CombinedModel(100, 9)
+    model = CombinedModel(100, 9).to('cuda')
 
     train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = model.learn(train_X, train_y1, train_y2, dev_X, dev_y1, dev_y2, test_X, test_y, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
