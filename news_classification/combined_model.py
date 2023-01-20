@@ -11,7 +11,7 @@ from batched_iterator import BatchedIterator, BatchedIterator2
 
 class CombinedModel(torch.nn.Module):
     def __init__(self, n_hidden, n_class_output):
-        super(Net, self).__init__()
+        super(CombinedModel, self).__init__()
         self.hidden = torch.nn.Linear(768, n_hidden)  # hidden layer
         self.out = torch.nn.Linear(n_hidden, n_class_output)  # classification
         self.out2 = torch.nn.Linear(n_hidden, 1)  # regression
