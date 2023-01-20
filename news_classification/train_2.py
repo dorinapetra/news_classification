@@ -107,11 +107,14 @@ def main(config_file):
     dev_y2 = dataset['validation']['year']
     test_y = dataset['test']['domain']
 
-    train_y2 -= train_y2.min()
-    train_y2 = train_y2.type(torch.FloatTensor).to('cuda') / train_y2.max()
+    min_year = train_y2.min()
+    max_year = train_y2.max()
 
-    dev_y2 -= train_y2.min()
-    dev_y2 = dev_y2.type(torch.FloatTensor).to('cuda') / train_y2.max()
+    train_y2 -= min_year
+    train_y2 = train_y2.type(torch.FloatTensor).to('cuda') / max_year
+
+    dev_y2 -= min_year
+    dev_y2 = dev_y2.type(torch.FloatTensor).to('cuda') / max_year
 
 
 
