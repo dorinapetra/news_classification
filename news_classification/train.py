@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from datetime import datetime
 
 import click
@@ -10,8 +9,8 @@ import yaml
 from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
 from torch import nn
-from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModel
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
@@ -27,6 +26,11 @@ def get_config_from_yaml(yaml_file):
 
 def _process_data(batch):
     batch['year'] = batch['date_of_creation'].year
+    batch['label'] = str(batch['year']) + '-' + batch['domain']
+
+    return batch
+
+def _add_label(batch):
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
     return batch
@@ -151,36 +155,35 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-            ['date_of_creation']).with_format("torch", device='cuda')
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
     dataset = dataset.remove_columns(['label'])
-    dataset = dataset.map(lambda x: _process_data(x), batched=False)
+    dataset = dataset.map(lambda x: _add_label(x), batched=False)
     dataset = dataset.class_encode_column('label')
     class_label = dataset['train'].features['label']
 
-    # train_X = torch.tensor(dataset['train'][cfg.input_name])
-    # dev_X = torch.tensor(dataset['validation'][cfg.input_name])
-    # test_X = torch.tensor(dataset['test'][cfg.input_name])
-    # train_y = torch.tensor(dataset['train'][cfg.output_name])
-    # dev_y = torch.tensor(dataset['validation'][cfg.output_name])
-    # test_y = torch.tensor(dataset['test'][cfg.output_name])
-    train_X = dataset['train'][cfg.input_name]
-    dev_X = dataset['validation'][cfg.input_name]
-    test_X = dataset['test'][cfg.input_name]
-    train_y = dataset['train'][cfg.output_name]
-    dev_y = dataset['validation'][cfg.output_name]
-    test_y = dataset['test'][cfg.output_name]
+    train_X = torch.tensor(dataset['train'][cfg.input_name])
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    test_X = torch.tensor(dataset['test'][cfg.input_name])
+    train_y = torch.tensor(dataset['train'][cfg.output_name])
+    dev_y = torch.tensor(dataset['validation'][cfg.output_name])
+    test_y = torch.tensor(dataset['test'][cfg.output_name])
+    # train_X = dataset['train'][cfg.input_name]
+    # dev_X = dataset['validation'][cfg.input_name]
+    # test_X = dataset['test'][cfg.input_name]
+    # train_y = dataset['train'][cfg.output_name]
+    # dev_y = dataset['validation'][cfg.output_name]
+    # test_y = dataset['test'][cfg.output_name]
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
         output_dim=len(class_label.names),
         hidden_dim=cfg.hidden_dim,
         dropout_value=cfg.dropout
-    ).to('cuda')
+    )
 
     train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = learn(model, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
