@@ -98,6 +98,8 @@ def main(config_file):
     # dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
     # test_y = torch.tensor(dataset['test']['domain']).to('cuda')
 
+    dataset = dataset.remove_columns(['date_of_creation'])
+
     train_X = dataset['train'][cfg.input_name]
     dev_X = dataset['validation'][cfg.input_name]
     test_X = dataset['test'][cfg.input_name]
