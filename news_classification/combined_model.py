@@ -53,13 +53,16 @@ class CombinedModel(torch.nn.Module):
                 optimizer.step()
 
             # one train epoch finished, evaluate on the train and the dev set (NOT the test)
-            train_out_1, train_out_2 = self.forward(train_X)
-            train_loss_1 = loss_func(train_out_1, train_y1.unsqueeze(1))
-            train_loss_2 = loss_func2(train_out_2, train_y2.unsqueeze(1))
-            train_loss = train_loss_1 + train_loss_2
-            all_train_loss.append(train_loss.item())
-            train_pred_1 = train_out_1.max(axis=1)[1]
-            train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
+            # for bi, (batch_x, batch_y1, batch_y2) in tqdm(enumerate(train_iter.iterate_once())):
+            #     train_out_1, train_out_2 = self.forward(batch_x)
+            #     train_loss_1 = loss_func(train_out_1, batch_y1.unsqueeze(1))
+            #     train_loss_2 = loss_func2(train_out_2, batch_y2.unsqueeze(1))
+            #     train_loss = train_loss_1 + train_loss_2
+            #     all_train_loss.append(train_loss.item())
+            #     train_pred_1 = train_out_1.max(axis=1)[1]
+            #     train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
+            train_acc_1 = 0
+            train_loss = 1
             all_train_acc.append(train_acc_1)
 
             dev_out_1, dev_out_2 = self.forward(dev_X)
