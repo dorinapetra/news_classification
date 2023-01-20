@@ -163,7 +163,7 @@ def main(config_file):
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
-        convert_dataset_to_jsonl(config_file)
+        convert_dataset_to_jsonl(cfg.preprocessed_dataset_path)
 
     class_label = dataset['train'].features['label']
 
