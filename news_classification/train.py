@@ -34,8 +34,8 @@ def _process_data(batch):
 
 
 def _add_label(batch):
-    batch['label'] = str(batch['year']) + '-' + batch['domain']
-
+    #batch['label'] = str(batch['year']) + '-' + batch['domain']
+    batch['label'] = str(batch['domain'])
     return batch
 
 
@@ -105,13 +105,14 @@ def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
 
     for epoch in range(cfg.epochs):
         # training loop
+        network.train()
         for bi, (batch_x, batch_y) in tqdm(enumerate(train_iter.iterate_once())):
             y_out = network(batch_x)
             loss = criterion(y_out, batch_y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
+        network.eval()
         # one train epoch finished, evaluate on the train and the dev set (NOT the test)
         train_out = network(train_X)
         train_loss = criterion(train_out, train_y)
@@ -162,8 +163,10 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-            ['date_of_creation']).with_format("torch", device=device)
+        if cfg.only_domain:
+            dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        else:
+            dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device=device)
 
     else:
         dataset, class_label = load_data()
@@ -177,15 +180,19 @@ def main(config_file):
             'validation': test_valid['train']})
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
+    if cfg.only_domain:
+        dataset = dataset.remove_columns(['label'])
+        dataset = dataset.map(lambda x: _add_label(x), batched=False)
+        dataset = dataset.class_encode_column("label")
     class_label = dataset['train'].features['label']
     print(len(class_label.names))
 
-    train_X = dataset['train'][cfg.input_name]
-    dev_X = dataset['validation'][cfg.input_name]
-    test_X = dataset['test'][cfg.input_name]
-    train_y = dataset['train'][cfg.output_name]
-    dev_y = dataset['validation'][cfg.output_name]
-    test_y = dataset['test'][cfg.output_name]
+    train_X = torch.tensor(dataset['train'][cfg.input_name]).to(device)
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to(device)
+    test_X = torch.tensor(dataset['test'][cfg.input_name]).to(device)
+    train_y = torch.tensor(dataset['train'][cfg.output_name]).to(device)
+    dev_y = torch.tensor(dataset['validation'][cfg.output_name]).to(device)
+    test_y = torch.tensor(dataset['test'][cfg.output_name]).to(device)
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),

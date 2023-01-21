@@ -9,6 +9,7 @@ output_name: label
 hidden_dim: 100
 n_layer: 1
 
+only_domain: False
 
 # training
 training_dir: /dir
