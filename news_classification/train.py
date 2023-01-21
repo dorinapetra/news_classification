@@ -64,10 +64,10 @@ def load_data(descartes=True):
 
     df = dataset['train'].to_pandas()
     df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
-    labels_to_remove = df_counted[df_counted.uuid < 2000]['label'].to_list()
+    labels_to_remove = df_counted[df_counted.uuid < 8000]['label'].to_list()
 
     dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
-    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
+    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2004, 1, 1))
     dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
     dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
     dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
@@ -162,41 +162,36 @@ def main(config_file):
 
     if cfg.load_tokenized_data:
         dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        # dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-        #                ['date_of_creation']).with_format("torch", device='cuda')
+        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+        #    ['date_of_creation']).with_format("torch", device='cuda')
+        train_testvalid = dataset['train'].train_test_split(test=0.2)
+        test_valid = train_testvalid['test'].train_test_split(test=0.5)
+        dataset = DatasetDict({
+            'train': train_testvalid['train'],
+            'test': test_valid['test'],
+            'valid': test_valid['train']})
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
-    df = dataset['train'].to_pandas()
-    df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
-    labels_to_remove = df_counted[df_counted.uuid < 8000]['label'].to_list()
-
-    dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
-    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2004, 1, 1))
-    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
-    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
-    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
-
-    dataset = dataset.remove_columns(['label'])
-    dataset = dataset.map(lambda x: _add_label(x), batched=False)
-    dataset = dataset.class_encode_column('label')
-    dataset.save_to_disk(cfg.preprocessed_dataset_path) 
+    # dataset = dataset.remove_columns(['label'])
+    # dataset = dataset.map(lambda x: _add_label(x), batched=False)
+    # dataset = dataset.class_encode_column('label')
 
     class_label = dataset['train'].features['label']
 
-    train_X = torch.tensor(dataset['train'][cfg.input_name])
-    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
-    test_X = torch.tensor(dataset['test'][cfg.input_name])
-    train_y = torch.tensor(dataset['train'][cfg.output_name])
-    dev_y = torch.tensor(dataset['validation'][cfg.output_name])
-    test_y = torch.tensor(dataset['test'][cfg.output_name])
-    # train_X = dataset['train'][cfg.input_name]
-    # dev_X = dataset['validation'][cfg.input_name]
-    # test_X = dataset['test'][cfg.input_name]
-    # train_y = dataset['train'][cfg.output_name]
-    # dev_y = dataset['validation'][cfg.output_name]
-    # test_y = dataset['test'][cfg.output_name]
+    # train_X = torch.tensor(dataset['train'][cfg.input_name])
+    # dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    # test_X = torch.tensor(dataset['test'][cfg.input_name])
+    # train_y = torch.tensor(dataset['train'][cfg.output_name])
+    # dev_y = torch.tensor(dataset['validation'][cfg.output_name])
+    # test_y = torch.tensor(dataset['test'][cfg.output_name])
+    train_X = dataset['train'][cfg.input_name]
+    dev_X = dataset['validation'][cfg.input_name]
+    test_X = dataset['test'][cfg.input_name]
+    train_y = dataset['train'][cfg.output_name]
+    dev_y = dataset['validation'][cfg.output_name]
+    test_y = dataset['test'][cfg.output_name]
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
