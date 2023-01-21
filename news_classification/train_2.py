@@ -115,10 +115,14 @@ def main(config_file):
     train_result = model.learn(train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
     result['num_classes'] = len(classes)
-    result['min_year'] = min_year
-    result['max_year'] = max_year
+    result['min_year'] = min_year.float()
+    result['max_year'] = max_year.float()
     result['classes'] = classes
     result["train_result"] = train_result
+    result["learning_rate"] = cfg.learning_rate
+    result["hidden_dim"] = cfg.hidden_dim
+    result["n_layer"] = cfg.n_layer
+
     with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
         yaml.dump(result, file)
 

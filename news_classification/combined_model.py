@@ -96,12 +96,12 @@ class CombinedModel(torch.nn.Module):
                 del train_loss_2
                 del train_loss
 
-            train_acc_1 = train_correct / train_all
+            train_acc_1 = float(train_correct / train_all)
             train_loss = float(train_losses) / train_all
             train_r2 = train_r2_losses / train_all
             all_train_acc.append(train_acc_1)
             all_train_loss.append(train_loss)
-            all_train_r2.append(train_r2)
+            all_train_r2.append(train_r2.float())
 
             dev_out_1, dev_out_2 = self.forward(dev_X)
             dev_loss_1 = loss_func(dev_out_1, dev_y1)
@@ -112,7 +112,7 @@ class CombinedModel(torch.nn.Module):
             dev_acc = float(torch.eq(dev_pred, dev_y1).sum().float() / len(dev_X))
             dev_r2 = self.r2_loss(dev_out_2.detach(), dev_y2.unsqueeze(1).detach())
             all_dev_acc.append(dev_acc)
-            all_dev_r2.append(dev_r2)
+            all_dev_r2.append(dev_r2.float())
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
             print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss.item()}  r2: {dev_r2}")
@@ -148,7 +148,7 @@ class CombinedModel(torch.nn.Module):
         result['dev_r2'] = all_dev_r2[best_epoch]
         result["test_acc"] = test_acc
         result["test_loss"] = test_loss
-        result['test_r2'] = test_r2
+        result['test_r2'] = test_r2.float()
         result['epochs'] = best_epoch
 
         return result
