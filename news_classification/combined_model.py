@@ -13,21 +13,23 @@ from sklearn.metrics import r2_score
 class CombinedModel(torch.nn.Module):
     def __init__(self, n_hidden, n_class_output, n_layer=1):
         super(CombinedModel, self).__init__()
+        self.n_layer = n_layer
         self.hidden = torch.nn.Linear(768, n_hidden)  # hidden layer
         self.relu = nn.ReLU()
-        layers = []
-        for i in range(n_layer):
-            layers.append(torch.nn.Linear(n_hidden, n_hidden))
-        self.layers = torch.nn.ModuleList(layers)
-        #self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
+        self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
+        self.hidden3 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
+        self.hidden4 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
         self.out = torch.nn.Linear(n_hidden, n_class_output)  # classification
         self.out2 = torch.nn.Linear(n_hidden, 1)  # regression
 
     def forward(self, x):
         x = self.relu(self.hidden(x))  # activation function for hidden layer
-        for layer in self.layers:
-            x = self.relu(layer(x))
-        #x = nn.ReLU(self.hidden2(x))  # activation function for hidden layer
+        if self.n_layer > 1:
+            x = self.relu(self.hidden2(x))
+        if self.n_layer > 2:
+            x = self.relu(self.hidden3(x))
+        if self.n_layer > 3:
+            x = self.relu(self.hidden4(x))
         x_out = F.softmax(self.out(x))
         x_out2 = self.out2(x)
         return x_out, x_out2
@@ -131,7 +133,7 @@ class CombinedModel(torch.nn.Module):
 
         test_out_1, test_out_2 = self.forward(test_X)
         test_loss_1 = loss_func(test_out_1, test_y1)
-        test_loss_2 = loss_func(test_out_2, test_y2.unsqueeze(1))
+        test_loss_2 = loss_func2(test_out_2, test_y2.unsqueeze(1))
         test_loss = test_loss_1 + test_loss_2
         test_pred = test_out_1.max(axis=1)[1]
         test_acc = float(torch.eq(test_pred, test_y1).sum().float() / len(test_X))
