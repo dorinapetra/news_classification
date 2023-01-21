@@ -15,9 +15,10 @@ class CombinedModel(torch.nn.Module):
         super(CombinedModel, self).__init__()
         self.hidden = torch.nn.Linear(768, n_hidden)  # hidden layer
         self.relu = nn.ReLU()
-        self.layers = []
+        layers = []
         for i in range(n_layer):
-            self.layers.append(torch.nn.Linear(n_hidden, n_hidden))
+            layers.append(torch.nn.Linear(n_hidden, n_hidden))
+        self.layers = torch.nn.ModuleList(layers)
         #self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
         self.out = torch.nn.Linear(n_hidden, n_class_output)  # classification
         self.out2 = torch.nn.Linear(n_hidden, 1)  # regression
