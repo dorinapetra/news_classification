@@ -6,6 +6,7 @@ import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 import torch.nn.functional as F
+from sklearn.metrics import r2_score
 
 
 class CombinedModel(torch.nn.Module):
@@ -22,11 +23,12 @@ class CombinedModel(torch.nn.Module):
         return x_out, x_out2
 
     def r2_loss(self, output, target):
-        target_mean = torch.mean(target)
-        ss_tot = torch.sum((target - target_mean) ** 2)
-        ss_res = torch.sum((target - output) ** 2)
-        r2 = 1 - ss_res / ss_tot
-        return r2
+        # target_mean = torch.mean(target)
+        # ss_tot = torch.sum((target - target_mean) ** 2)
+        # ss_res = torch.sum((target - output) ** 2)
+        # r2 = 1 - ss_res / ss_tot
+        # return r2
+        return r2_score(output, target)
 
     def learn(self, train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg):
         result = {}
