@@ -18,6 +18,7 @@ class SimpleClassifier(nn.Module):
         self.drop_out2 = nn.Dropout(dropout_value)
         self.output_layer = nn.Linear(hidden_dim, output_dim)
 
+        self.logsoftmax = nn.LogSoftmax()
 
     def forward(self, X):
         h = self.input_layer(X)
@@ -28,7 +29,7 @@ class SimpleClassifier(nn.Module):
         h = self.relu2(h)
         h = self.drop_out2(h)
         out = self.output_layer(h)
-        return out
+        return self.logsoftmax(out)
 
     def learn(self, train_X, train_y, dev_X, dev_y, epochs, batch_size):
         criterion = nn.CrossEntropyLoss()
