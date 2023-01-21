@@ -163,9 +163,10 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
-        #    ['date_of_creation']).with_format("torch", device=device)
+        if cfg.only_domain:
+            dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        else:
+            dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device=device)
 
     else:
         dataset, class_label = load_data()
@@ -179,9 +180,10 @@ def main(config_file):
             'validation': test_valid['train']})
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
-    dataset = dataset.remove_columns(['label'])
-    dataset = dataset.map(lambda x: _add_label(x), batched=False)
-    dataset = dataset.class_encode_column("label")
+    if cfg.only_domain:
+        dataset = dataset.remove_columns(['label'])
+        dataset = dataset.map(lambda x: _add_label(x), batched=False)
+        dataset = dataset.class_encode_column("label")
     class_label = dataset['train'].features['label']
     print(len(class_label.names))
 
