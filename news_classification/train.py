@@ -87,7 +87,8 @@ def load_data(descartes=True):
 
 def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(network.parameters())
+    optimizer = optim.Adam(network.parameters(), lr=0.0001)
+    # optimizer = optim.SGD(network.parameters(), lr=0.001, momentum=0.9)
 
     train_iter = BatchedIterator(train_X, train_y, cfg.batch_size)
 
@@ -178,6 +179,7 @@ def main(config_file):
     # dataset = dataset.map(lambda x: _add_label(x), batched=False)
     # dataset = dataset.class_encode_column('label')
     class_label = dataset['train'].features['label']
+    print(len(class_label.names))
     #train_X = torch.tensor(dataset['train'][cfg.input_name]).to(device)
     #dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to(device)
     #test_X = torch.tensor(dataset['test'][cfg.input_name]).to(device)
