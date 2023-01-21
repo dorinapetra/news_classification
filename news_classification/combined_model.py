@@ -27,8 +27,8 @@ class CombinedModel(torch.nn.Module):
 
     def r2_loss(self, output, target):
         target_mean = torch.mean(target)
-        ss_tot = torch.sum((target - target_mean) ** 2)
-        ss_res = torch.sum((target - output) ** 2)
+        ss_tot = torch.sum((target - target_mean) ** 2).float()
+        ss_res = torch.sum((target - output) ** 2).float()
         r2 = 1 - ss_res / ss_tot
         return r2
 
