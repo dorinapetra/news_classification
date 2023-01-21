@@ -109,6 +109,9 @@ class CombinedModel(torch.nn.Module):
             dev_loss = dev_loss_1 + dev_loss_2
             all_dev_loss.append(dev_loss.item())
             dev_pred = dev_out_1.max(axis=1)[1]
+            print(dev_pred[:10])
+            print(dev_y1[:10])
+            print('-----------------')
             dev_acc = float(torch.eq(dev_pred, dev_y1).sum().float() / len(dev_X))
             dev_r2 = self.r2_loss(dev_out_2.detach(), dev_y2.unsqueeze(1).detach())
             all_dev_acc.append(dev_acc)
@@ -116,7 +119,7 @@ class CombinedModel(torch.nn.Module):
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
             print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss.item()}  r2: {dev_r2}")
-            print(torch.cuda.memory_allocated())
+            print(f"Losses: dev_loss_1: {dev_loss_1.item()} dev_loss_2: {dev_loss_2.item()}")
 
             if min_loss - dev_loss.item() > 0.0001:
                 epochs_no_improve = 0
