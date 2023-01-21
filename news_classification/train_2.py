@@ -1,3 +1,4 @@
+import glob
 import os
 from datetime import datetime
 
@@ -67,17 +68,12 @@ def load_data(descartes=True):
     return dataset, class_label
 
 
-
-
-@click.command()
-@click.argument('config_file')
-def main(config_file):
-    cfg = get_config_from_yaml(config_file)
-
+def main_main(cfg):
     result = {"start_time": datetime.now()}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device=device)
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+            ['date_of_creation']).with_format("torch", device=device)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
@@ -123,8 +119,26 @@ def main(config_file):
     result["hidden_dim"] = cfg.hidden_dim
     result["n_layer"] = cfg.n_layer
 
-    with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
-        yaml.dump(result, file)
+    return result
+
+
+@click.command()
+@click.argument('config_file')
+def main(config_file):
+    if os.path.isdir(config_file):
+        configs = glob.glob(config_file + "/*")
+        for i, config_f in enumerate(configs):
+            cfg = get_config_from_yaml(config_f)
+            result = main_main(cfg)
+            with open(os.path.join(cfg.training_dir, str(i), "result.yaml"), 'w+') as file:
+                yaml.dump(result, file)
+    else:
+        cfg = get_config_from_yaml(config_file)
+        result = main_main(cfg)
+        with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
+            yaml.dump(result, file)
+
+
 
 
 if __name__ == '__main__':
