@@ -12,9 +12,11 @@ from torch import nn
 from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
 
-from batched_iterator import BatchedIterator
+from batched_iterator import BatchedIterator, BatchedIterator2
 from classifier import SimpleClassifier
 from combined_model import CombinedModel
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def get_config_from_yaml(yaml_file):
@@ -73,29 +75,16 @@ def main(config_file):
     cfg = get_config_from_yaml(config_file)
 
     result = {"start_time": datetime.now()}
-    model_result = {}
 
     if cfg.load_tokenized_data:
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device='cuda')
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(['date_of_creation']).with_format("torch", device=device)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
-    
-    # dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2003, 1, 1))
-    # dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
-    # dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
-    # dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
     dataset = dataset.class_encode_column('domain')
 
-    # train_X = torch.tensor(dataset['train'][cfg.input_name]).to('cuda')
-    # dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to('cuda')
-    # test_X = torch.tensor(dataset['test'][cfg.input_name]).to('cuda')
-    # train_y1 = torch.tensor(dataset['train']['domain']).to('cuda')
-    # train_y2 = torch.tensor(dataset['train']['year']).to('cuda')
-    # dev_y1 = torch.tensor(dataset['validation']['domain']).to('cuda')
-    # dev_y2 = torch.tensor(dataset['validation']['year']).to('cuda')
-    # test_y = torch.tensor(dataset['test']['domain']).to('cuda')
+    classes = dataset.features['domain'].names
 
     train_X = dataset['train'][cfg.input_name]
     dev_X = dataset['validation'][cfg.input_name]
@@ -104,37 +93,28 @@ def main(config_file):
     train_y2 = dataset['train']['year']
     dev_y1 = dataset['validation']['domain']
     dev_y2 = dataset['validation']['year']
-    test_y = dataset['test']['domain']
+    test_y1 = dataset['test']['domain']
+    test_y2 = dataset['test']['year']
 
     min_year = train_y2.min()
     max_year = train_y2.max()
 
     train_y2 -= min_year
-    train_y2 = train_y2.type(torch.FloatTensor).to('cuda') / max_year
+    train_y2 = train_y2.type(torch.FloatTensor).to(device) / max_year
 
     dev_y2 -= min_year
-    dev_y2 = dev_y2.type(torch.FloatTensor).to('cuda') / max_year
+    dev_y2 = dev_y2.type(torch.FloatTensor).to(device) / max_year
 
+    test_y2 -= min_year
+    test_y2 = test_y2.type(torch.FloatTensor).to(device) / max_year
 
+    model = CombinedModel(cfg.hidden_dim, len(classes)).to(device)
 
-    # model = SimpleClassifier(
-    #     input_dim=train_X.size(1),
-    #     output_dim=len(class_label.names),
-    #     hidden_dim=cfg.hidden_dim,
-    #     dropout_value=cfg.dropout
-    # )
+    train_iter = BatchedIterator2(train_X, train_y1, train_y2, cfg.batch_size)
 
-    model = CombinedModel(100, 9).to('cuda')
-
-    train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = model.learn(train_X, train_y1, train_y2, dev_X, dev_y1, dev_y2, test_X, test_y, cfg)
+    train_result = model.learn(train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
-    result["train_acc"] = train_acc
-    result["train_loss"] = train_loss
-    result["dev_acc"] = dev_acc
-    result["dev_loss"] = dev_loss
-    result["test_acc"] = test_acc
-    result["test_loss"] = test_loss
-    result["training"] = model_result
+    result["train_result"] = train_result
     with open(os.path.join(cfg.training_dir , "result.yaml"), 'w+') as file:
         yaml.dump(result, file)
 

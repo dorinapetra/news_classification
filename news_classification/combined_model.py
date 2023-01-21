@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 import torch.nn.functional as F
-from batched_iterator import BatchedIterator, BatchedIterator2
+from torchmetrics import R2Score
 
 
 class CombinedModel(torch.nn.Module):
@@ -22,18 +22,26 @@ class CombinedModel(torch.nn.Module):
         x_out2 = self.out2(x)
         return x_out, x_out2
 
-    def learn(self, train_X, train_y1, train_y2, dev_X, dev_y1, dev_y2, test_X, test_y, cfg):
+    def r2_loss(self, output, target):
+        target_mean = torch.mean(target)
+        ss_tot = torch.sum((target - target_mean) ** 2)
+        ss_res = torch.sum((target - output) ** 2)
+        r2 = 1 - ss_res / ss_tot
+        return r2
+
+    def learn(self, train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg):
+        result = {}
         optimizer = optim.Adam(self.parameters())
 
         loss_func = torch.nn.CrossEntropyLoss()  # the target label is NOT an one-hotted
         loss_func2 = torch.nn.MSELoss()  # this is for regression mean squared loss
 
-        train_iter = BatchedIterator2(train_X, train_y1, train_y2, cfg.batch_size)
-
         all_train_loss = []
         all_dev_loss = []
         all_train_acc = []
         all_dev_acc = []
+        all_train_r2 = []
+        all_dev_r2 = []
 
         patience = cfg.patience
         epochs_no_improve = 0
@@ -52,18 +60,30 @@ class CombinedModel(torch.nn.Module):
                 loss_total.backward()
                 optimizer.step()
 
+            train_correct = 0
+            train_losses = 0
+            train_all = 0
+            train_r2_losses = 0
+
             # one train epoch finished, evaluate on the train and the dev set (NOT the test)
-            # for bi, (batch_x, batch_y1, batch_y2) in tqdm(enumerate(train_iter.iterate_once())):
-            #     train_out_1, train_out_2 = self.forward(batch_x)
-            #     train_loss_1 = loss_func(train_out_1, batch_y1.unsqueeze(1))
-            #     train_loss_2 = loss_func2(train_out_2, batch_y2.unsqueeze(1))
-            #     train_loss = train_loss_1 + train_loss_2
-            #     all_train_loss.append(train_loss.item())
-            #     train_pred_1 = train_out_1.max(axis=1)[1]
-            #     train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
-            train_acc_1 = 0
-            train_loss = 1
+            for bi, (batch_x, batch_y1, batch_y2) in tqdm(enumerate(train_iter.iterate_once())):
+                train_out_1, train_out_2 = self.forward(batch_x)
+                train_loss_1 = loss_func(train_out_1, batch_y1.unsqueeze(1))
+                train_loss_2 = loss_func2(train_out_2, batch_y2.unsqueeze(1))
+                train_loss = train_loss_1 + train_loss_2
+                train_pred_1 = train_out_1.max(axis=1)[1]
+                train_all += len(batch_x)
+                train_correct += torch.eq(train_pred_1, batch_y1).sum().float()
+                train_losses += len(batch_x) * train_loss.item()
+                train_r2_losses += len(batch_x) * self.r2_loss(train_out_2, batch_y2)
+                # train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
+
+            train_acc_1 = train_correct / train_all
+            train_loss = float(train_losses) / train_all
+            train_r2 = train_r2_losses / train_all
             all_train_acc.append(train_acc_1)
+            all_train_loss.append(train_loss)
+            all_train_r2.append(train_r2)
 
             dev_out_1, dev_out_2 = self.forward(dev_X)
             dev_loss_1 = loss_func(dev_out_1, dev_y1)
@@ -72,7 +92,9 @@ class CombinedModel(torch.nn.Module):
             all_dev_loss.append(dev_loss.item())
             dev_pred = dev_out_1.max(axis=1)[1]
             dev_acc = float(torch.eq(dev_pred, dev_y1).sum().float() / len(dev_X))
+            dev_r2 = self.r2_loss(dev_out_1, dev_y2)
             all_dev_acc.append(dev_acc)
+            all_dev_r2.append(dev_r2)
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}")
             print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss}")
@@ -90,14 +112,23 @@ class CombinedModel(torch.nn.Module):
             if early_stopping:
                 break
 
-        # test_out = self.forward(test_X)
-        # test_loss = criterion(test_out, test_y)
-        # test_pred = test_out.max(axis=1)[1]
-        # test_acc = float(torch.eq(test_pred, test_y).sum().float() / len(test_X))
-        # test_loss_v = test_loss.item()
+        test_out_1, test_out_2 = self.forward(test_X)
+        test_loss_1 = loss_func(test_out_1, test_y1)
+        test_loss_2 = loss_func(test_out_2, test_y2)
+        test_loss = test_loss_1 + test_loss_2
+        test_pred = test_out_1.max(axis=1)[1]
+        test_acc = float(torch.eq(test_pred, test_y1).sum().float() / len(test_X))
+        test_loss = test_loss.item()
+        test_r2 = self.r2_loss(test_out_2, test_y2)
 
-        test_acc = 0
-        test_loss_v = 0
+        result["train_acc"] = all_train_acc[best_epoch]
+        result["train_loss"] = all_train_loss[best_epoch]
+        result['train_r2'] = all_train_r2[best_epoch]
+        result["dev_acc"] = all_dev_acc[best_epoch]
+        result["dev_loss"] = all_dev_loss[best_epoch]
+        result['dev_r2'] = all_dev_r2[best_epoch]
+        result["test_acc"] = test_acc
+        result["test_loss"] = test_loss
+        result['test_r2'] = test_r2
 
-        return all_train_acc[best_epoch], all_train_loss[best_epoch], all_dev_acc[best_epoch], all_dev_loss[
-            best_epoch], test_acc, test_loss_v
+        return result
