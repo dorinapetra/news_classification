@@ -62,6 +62,9 @@ class CombinedModel(torch.nn.Module):
                 optimizer.zero_grad()
                 loss_total.backward()
                 optimizer.step()
+                del loss1
+                del loss2
+                del loss_total
 
             train_correct = 0
             train_losses = 0
@@ -80,6 +83,9 @@ class CombinedModel(torch.nn.Module):
                 train_losses += len(batch_x) * train_loss.item()
                 train_r2_losses += len(batch_x) * self.r2_loss(train_out_2, batch_y2.unsqueeze(1))
                 # train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
+                del train_loss_1
+                del train_loss_2
+                del train_loss
 
             train_acc_1 = train_correct / train_all
             train_loss = float(train_losses) / train_all
@@ -101,8 +107,6 @@ class CombinedModel(torch.nn.Module):
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
             print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss.item()}  r2: {dev_r2}")
-            print(f"sizes: {sys.getsizeof(all_train_acc)}, {sys.getsizeof(all_train_loss)},{sys.getsizeof(all_train_r2)}")
-            print(f"sizes: {sys.getsizeof(all_dev_acc)}, {sys.getsizeof(all_dev_loss)},{sys.getsizeof(all_dev_r2)}")
 
             if min_loss - dev_loss.item() > 0.0001:
                 epochs_no_improve = 0
