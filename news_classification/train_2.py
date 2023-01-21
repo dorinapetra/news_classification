@@ -100,13 +100,13 @@ def main(config_file):
     max_year = train_y2.max()
 
     train_y2 -= min_year
-    train_y2 = train_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)
+    train_y2 = (train_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)) * 10
 
     dev_y2 -= min_year
-    dev_y2 = dev_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)
+    dev_y2 = (dev_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)) * 10
 
     test_y2 -= min_year
-    test_y2 = test_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)
+    test_y2 = (test_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)) * 10
 
     model = CombinedModel(cfg.hidden_dim, len(classes), n_layer=cfg.n_layer).to(device)
 
