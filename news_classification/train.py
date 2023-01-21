@@ -204,6 +204,7 @@ def main(config_file):
     result["test_acc"] = test_acc
     result["test_loss"] = test_loss
     result["training"] = model_result
+    result['classes'] = class_label.names
     with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
         yaml.dump(result, file)
 
