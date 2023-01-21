@@ -87,7 +87,7 @@ def load_data(descartes=True):
 
 def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(network.parameters(), lr=0.0001)
+    optimizer = optim.Adam(network.parameters(), lr=cfg.learning_rate)
     # optimizer = optim.SGD(network.parameters(), lr=0.001, momentum=0.9)
 
     train_iter = BatchedIterator(train_X, train_y, cfg.batch_size)
