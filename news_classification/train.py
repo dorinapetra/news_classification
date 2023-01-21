@@ -169,7 +169,7 @@ def main(config_file):
         dataset = DatasetDict({
             'train': train_testvalid['train'],
             'test': test_valid['test'],
-            'valid': test_valid['train']})
+            'validation': test_valid['train']})
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
@@ -180,18 +180,18 @@ def main(config_file):
 
     class_label = dataset['train'].features['label']
 
-    # train_X = torch.tensor(dataset['train'][cfg.input_name])
-    # dev_X = torch.tensor(dataset['validation'][cfg.input_name])
-    # test_X = torch.tensor(dataset['test'][cfg.input_name])
-    # train_y = torch.tensor(dataset['train'][cfg.output_name])
-    # dev_y = torch.tensor(dataset['validation'][cfg.output_name])
-    # test_y = torch.tensor(dataset['test'][cfg.output_name])
-    train_X = dataset['train'][cfg.input_name]
-    dev_X = dataset['validation'][cfg.input_name]
-    test_X = dataset['test'][cfg.input_name]
-    train_y = dataset['train'][cfg.output_name]
-    dev_y = dataset['validation'][cfg.output_name]
-    test_y = dataset['test'][cfg.output_name]
+    train_X = torch.tensor(dataset['train'][cfg.input_name]).to(device)
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to(device)
+    test_X = torch.tensor(dataset['test'][cfg.input_name]).to(device)
+    train_y = torch.tensor(dataset['train'][cfg.output_name]).to(device)
+    dev_y = torch.tensor(dataset['validation'][cfg.output_name]).to(device)
+    test_y = torch.tensor(dataset['test'][cfg.output_name]).to(device)
+    # train_X = dataset['train'][cfg.input_name]
+    # dev_X = dataset['validation'][cfg.input_name]
+    # test_X = dataset['test'][cfg.input_name]
+    # train_y = dataset['train'][cfg.output_name]
+    # dev_y = dataset['validation'][cfg.output_name]
+    # test_y = dataset['test'][cfg.output_name]
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
