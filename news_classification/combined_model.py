@@ -6,7 +6,6 @@ import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 import torch.nn.functional as F
-from torchmetrics import R2Score
 
 
 class CombinedModel(torch.nn.Module):
