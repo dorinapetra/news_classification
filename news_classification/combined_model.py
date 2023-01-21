@@ -34,7 +34,7 @@ class CombinedModel(torch.nn.Module):
 
     def learn(self, train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg):
         result = {}
-        optimizer = optim.Adam(self.parameters())
+        optimizer = optim.Adam(self.parameters(), lr=cfg.learning_rate)
 
         loss_func = torch.nn.CrossEntropyLoss()  # the target label is NOT an one-hotted
         loss_func2 = torch.nn.MSELoss()  # this is for regression mean squared loss
