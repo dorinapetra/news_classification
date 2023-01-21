@@ -67,7 +67,7 @@ class CombinedModel(torch.nn.Module):
             # one train epoch finished, evaluate on the train and the dev set (NOT the test)
             for bi, (batch_x, batch_y1, batch_y2) in tqdm(enumerate(train_iter.iterate_once())):
                 train_out_1, train_out_2 = self.forward(batch_x)
-                train_loss_1 = loss_func(train_out_1, batch_y1.unsqueeze(1))
+                train_loss_1 = loss_func(train_out_1, batch_y1)
                 train_loss_2 = loss_func2(train_out_2, batch_y2.unsqueeze(1))
                 train_loss = train_loss_1 + train_loss_2
                 train_pred_1 = train_out_1.max(axis=1)[1]
