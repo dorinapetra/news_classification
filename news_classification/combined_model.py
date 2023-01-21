@@ -107,6 +107,7 @@ class CombinedModel(torch.nn.Module):
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
             print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss.item()}  r2: {dev_r2}")
+            print(torch.cuda.memory_allocated())
 
             if min_loss - dev_loss.item() > 0.0001:
                 epochs_no_improve = 0
