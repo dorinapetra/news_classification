@@ -23,12 +23,11 @@ class CombinedModel(torch.nn.Module):
         return x_out, x_out2
 
     def r2_loss(self, output, target):
-        # target_mean = torch.mean(target)
-        # ss_tot = torch.sum((target - target_mean) ** 2)
-        # ss_res = torch.sum((target - output) ** 2)
-        # r2 = 1 - ss_res / ss_tot
-        # return r2
-        return r2_score(output, target)
+        target_mean = torch.mean(target)
+        ss_tot = torch.sum((target - target_mean) ** 2)
+        ss_res = torch.sum((target - output) ** 2)
+        r2 = 1 - ss_res / ss_tot
+        return r2
 
     def learn(self, train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg):
         result = {}
@@ -93,7 +92,7 @@ class CombinedModel(torch.nn.Module):
             all_dev_loss.append(dev_loss.item())
             dev_pred = dev_out_1.max(axis=1)[1]
             dev_acc = float(torch.eq(dev_pred, dev_y1).sum().float() / len(dev_X))
-            dev_r2 = self.r2_loss(dev_out_1, dev_y2.unsqueeze(1))
+            dev_r2 = self.r2_loss(dev_out_2, dev_y2.unsqueeze(1))
             all_dev_acc.append(dev_acc)
             all_dev_r2.append(dev_r2)
 
