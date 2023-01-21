@@ -84,7 +84,7 @@ def main(config_file):
 
     dataset = dataset.class_encode_column('domain')
 
-    classes = dataset.features['domain'].names
+    classes = dataset['train'].features['domain'].names
 
     train_X = dataset['train'][cfg.input_name]
     dev_X = dataset['validation'][cfg.input_name]
