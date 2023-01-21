@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 import torch
@@ -99,11 +100,13 @@ class CombinedModel(torch.nn.Module):
             all_dev_r2.append(dev_r2)
 
             print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
-            print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss}  r2: {dev_r2}")
+            print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss.item()}  r2: {dev_r2}")
+            print(f"sizes: {sys.getsizeof(all_train_acc)}, {sys.getsizeof(all_train_loss)},{sys.getsizeof(all_train_r2)}")
+            print(f"sizes: {sys.getsizeof(all_dev_acc)}, {sys.getsizeof(all_dev_loss)},{sys.getsizeof(all_dev_r2)}")
 
-            if min_loss - dev_loss > 0.0001:
+            if min_loss - dev_loss.item() > 0.0001:
                 epochs_no_improve = 0
-                min_loss = dev_loss
+                min_loss = dev_loss.item()
                 best_epoch = epoch
                 torch.save(self, os.path.join(cfg.training_dir, "model.pt"))
             else:
