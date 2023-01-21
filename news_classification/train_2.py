@@ -108,7 +108,7 @@ def main(config_file):
     test_y2 -= min_year
     test_y2 = test_y2.type(torch.FloatTensor).to(device) / (max_year - min_year)
 
-    model = CombinedModel(cfg.hidden_dim, len(classes)).to(device)
+    model = CombinedModel(cfg.hidden_dim, len(classes), n_layer=cfg.n_layer).to(device)
 
     train_iter = BatchedIterator2(train_X, train_y1, train_y2, cfg.batch_size)
 

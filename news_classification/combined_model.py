@@ -11,16 +11,21 @@ from sklearn.metrics import r2_score
 
 
 class CombinedModel(torch.nn.Module):
-    def __init__(self, n_hidden, n_class_output):
+    def __init__(self, n_hidden, n_class_output, n_layer=1):
         super(CombinedModel, self).__init__()
         self.hidden = torch.nn.Linear(768, n_hidden)  # hidden layer
-        self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
+        self.layers = []
+        for i in range(n_layer):
+            self.layers.append(torch.nn.Linear(n_hidden, n_hidden))
+        #self.hidden2 = torch.nn.Linear(n_hidden, n_hidden)  # hidden layer
         self.out = torch.nn.Linear(n_hidden, n_class_output)  # classification
         self.out2 = torch.nn.Linear(n_hidden, 1)  # regression
 
     def forward(self, x):
-        x = nn.ReLU()(self.hidden(x))  # activation function for hidden layer
-        x = nn.ReLU()(self.hidden2(x))  # activation function for hidden layer
+        x = nn.ReLU(self.hidden(x))  # activation function for hidden layer
+        for layer in self.layers:
+            x = nn.ReLU(layer(x))
+        #x = nn.ReLU(self.hidden2(x))  # activation function for hidden layer
         x_out = F.softmax(self.out(x))
         x_out2 = self.out2(x)
         return x_out, x_out2
@@ -140,5 +145,6 @@ class CombinedModel(torch.nn.Module):
         result["test_acc"] = test_acc
         result["test_loss"] = test_loss
         result['test_r2'] = test_r2
+        result['epochs'] = best_epoch
 
         return result
