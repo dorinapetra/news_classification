@@ -95,8 +95,8 @@ class CombinedModel(torch.nn.Module):
             all_dev_acc.append(dev_acc)
             all_dev_r2.append(dev_r2)
 
-            print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}")
-            print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss}")
+            print(f"Epoch: {epoch}\n  train accuracy: {train_acc_1}  train loss: {train_loss}  r2: {train_r2}")
+            print(f"  dev accuracy: {dev_acc}  dev loss: {dev_loss}  r2: {dev_r2}")
 
             if min_loss - dev_loss > 0.0001:
                 epochs_no_improve = 0
