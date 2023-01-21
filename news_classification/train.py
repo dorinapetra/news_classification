@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import yaml
-from datasets import load_dataset, DatasetDict, Dataset
+from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
 from torch import nn
 from tqdm import tqdm
@@ -14,7 +14,8 @@ from transformers import AutoTokenizer, AutoModel
 
 from batched_iterator import BatchedIterator
 from classifier import SimpleClassifier
-from create_split import convert_dataset_to_jsonl, load_train_valid_test
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_config_from_yaml(yaml_file):
@@ -31,26 +32,30 @@ def _process_data(batch):
 
     return batch
 
+
 def _add_label(batch):
     batch['label'] = str(batch['year']) + '-' + batch['domain']
 
     return batch
+
 
 def tokenize_data(batch):
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
     input_ids = torch.tensor(inputs.input_ids).to('cuda')
     attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
     output = bert_model(input_ids=torch.tensor(input_ids),
-                   attention_mask=torch.tensor(attention_mask))
+                        attention_mask=torch.tensor(attention_mask))
     batch['cls_token'] = list(output.pooler_output)
     batch['start_token'] = list(output.last_hidden_state[:, 0, :])
     batch['avg_token'] = list(torch.mean(output.last_hidden_state, dim=1))
 
     return batch
 
+
 tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
 bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
 bert_model.eval()
+
 
 def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
@@ -67,7 +72,7 @@ def load_data(descartes=True):
     dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
     dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
 
-    bert_model.to('cuda')
+    bert_model.to(device)
     dataset = dataset.map(lambda x: _process_data(x), batched=False)
     dataset = dataset.map(lambda x: tokenize_data(x), batched=True, batch_size=50)
     if descartes:
@@ -78,7 +83,6 @@ def load_data(descartes=True):
         dataset = dataset.class_encode_column('domain')
         dataset = dataset.class_encode_column('year')
     return dataset, class_label
-
 
 
 def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
@@ -144,7 +148,8 @@ def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
     test_acc = float(torch.eq(test_pred, test_y).sum().float() / len(test_X))
     test_loss_v = test_loss.item()
 
-    return all_train_acc[best_epoch], all_train_loss[best_epoch], all_dev_acc[best_epoch], all_dev_loss[best_epoch], test_acc, test_loss_v
+    return all_train_acc[best_epoch], all_train_loss[best_epoch], all_dev_acc[best_epoch], all_dev_loss[
+        best_epoch], test_acc, test_loss_v
 
 
 @click.command()
@@ -156,28 +161,36 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        #dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
+        # dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
         #                ['date_of_creation']).with_format("torch", device='cuda')
-        train_df, valid_df, test_df = load_train_valid_test(cfg.preprocessed_dataset_path)
-        dataset = DatasetDict()
-        dataset['train'] = Dataset.from_pandas(train_df)
     else:
         dataset, class_label = load_data()
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
-        convert_dataset_to_jsonl(cfg.preprocessed_dataset_path)
-        train_df, valid_df, test_df = load_train_valid_test(cfg.preprocessed_dataset_path)
+
+    df = dataset['train'].to_pandas()
+    df_counted = df.groupby(['label']).count().reset_index()[['label', 'uuid']]
+    labels_to_remove = df_counted[df_counted.uuid < 8000]['label'].to_list()
+
+    dataset = dataset.filter(lambda x: x["label"] not in labels_to_remove)
+    dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(2004, 1, 1))
+    dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
+    dataset = dataset.filter(lambda x: x["domain"] != "telex.hu")
+    dataset = dataset.filter(lambda x: x["domain"] != "metropol.hu")
+
+    dataset = dataset.remove_columns(['label'])
+    dataset = dataset.map(lambda x: _add_label(x), batched=False)
+    dataset = dataset.class_encode_column('label')
+    dataset.save_to_disk(cfg.preprocessed_dataset_path) 
 
     class_label = dataset['train'].features['label']
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    train_X = torch.tensor(train_df[cfg.input_name]).to(device=device)
-    dev_X = torch.tensor(valid_df[cfg.input_name]).to(device=device)
-    test_X = torch.tensor(test_df[cfg.input_name]).to(device=device)
-    train_y = torch.tensor(train_df[cfg.output_name]).to(device=device)
-    dev_y = torch.tensor(valid_df[cfg.output_name]).to(device=device)
-    test_y = torch.tensor(test_df[cfg.output_name]).to(device=device)
+    train_X = torch.tensor(dataset['train'][cfg.input_name])
+    dev_X = torch.tensor(dataset['validation'][cfg.input_name])
+    test_X = torch.tensor(dataset['test'][cfg.input_name])
+    train_y = torch.tensor(dataset['train'][cfg.output_name])
+    dev_y = torch.tensor(dataset['validation'][cfg.output_name])
+    test_y = torch.tensor(dataset['test'][cfg.output_name])
     # train_X = dataset['train'][cfg.input_name]
     # dev_X = dataset['validation'][cfg.input_name]
     # test_X = dataset['test'][cfg.input_name]
@@ -192,7 +205,8 @@ def main(config_file):
         dropout_value=cfg.dropout
     ).to(device)
 
-    train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = learn(model, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg)
+    train_acc, train_loss, dev_acc, dev_loss, test_acc, test_loss = learn(model, train_X, train_y, dev_X, dev_y, test_X,
+                                                                          test_y, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
     result["train_acc"] = train_acc
     result["train_loss"] = train_loss
