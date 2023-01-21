@@ -193,12 +193,6 @@ def main(config_file):
     train_y = torch.tensor(dataset['train'][cfg.output_name]).to(device)
     dev_y = torch.tensor(dataset['validation'][cfg.output_name]).to(device)
     test_y = torch.tensor(dataset['test'][cfg.output_name]).to(device)
-    #train_X = dataset['train'][cfg.input_name]
-    #dev_X = dataset['validation'][cfg.input_name]
-    #test_X = dataset['test'][cfg.input_name]
-    #train_y = dataset['train'][cfg.output_name]
-    #dev_y = dataset['validation'][cfg.output_name]
-    #test_y = dataset['test'][cfg.output_name]
 
     model = SimpleClassifier(
         input_dim=train_X.size(1),
