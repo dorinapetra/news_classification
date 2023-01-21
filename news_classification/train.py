@@ -87,7 +87,7 @@ def load_data(descartes=True):
 
 def learn(network, train_X, train_y, dev_X, dev_y, test_X, test_y, cfg):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(network.parameters(), lr=0.0001)
+    optimizer = optim.Adam(network.parameters(), lr=cfg.learning_rate)
     # optimizer = optim.SGD(network.parameters(), lr=0.001, momentum=0.9)
 
     train_iter = BatchedIterator(train_X, train_y, cfg.batch_size)
@@ -162,30 +162,24 @@ def main(config_file):
     model_result = {}
 
     if cfg.load_tokenized_data:
-        # dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
         dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
             ['date_of_creation']).with_format("torch", device=device)
-        #train_testvalid = dataset['train'].train_test_split(test_size=0.1)
-        #test_valid = train_testvalid['test'].train_test_split(test_size=0.5)
-        #dataset = DatasetDict({
-        #    'train': train_testvalid['train'],
-        #    'test': test_valid['test'],
-        #    'validation': test_valid['train']})
+
     else:
         dataset, class_label = load_data()
+
+        # saving with different split created from train
+        train_testvalid = dataset['train'].train_test_split(test_size=0.1)
+        test_valid = train_testvalid['test'].train_test_split(test_size=0.5)
+        dataset = DatasetDict({
+            'train': train_testvalid['train'],
+            'test': test_valid['test'],
+            'validation': test_valid['train']})
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
-    # dataset = dataset.remove_columns(['label'])
-    # dataset = dataset.map(lambda x: _add_label(x), batched=False)
-    # dataset = dataset.class_encode_column('label')
     class_label = dataset['train'].features['label']
     print(len(class_label.names))
-    #train_X = torch.tensor(dataset['train'][cfg.input_name]).to(device)
-    #dev_X = torch.tensor(dataset['validation'][cfg.input_name]).to(device)
-    #test_X = torch.tensor(dataset['test'][cfg.input_name]).to(device)
-    #train_y = torch.tensor(dataset['train'][cfg.output_name]).to(device)
-    #dev_y = torch.tensor(dataset['validation'][cfg.output_name]).to(device)
-    #test_y = torch.tensor(dataset['test'][cfg.output_name]).to(device)
+
     train_X = dataset['train'][cfg.input_name]
     dev_X = dataset['validation'][cfg.input_name]
     test_X = dataset['test'][cfg.input_name]
@@ -210,6 +204,7 @@ def main(config_file):
     result["test_acc"] = test_acc
     result["test_loss"] = test_loss
     result["training"] = model_result
+    result['classes'] = class_label.names
     with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
         yaml.dump(result, file)
 
