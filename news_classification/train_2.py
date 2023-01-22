@@ -130,8 +130,7 @@ def main(config_file, input_type, filter_data):
     if filter_data:
         cfg = get_config_from_yaml(config_file)
         dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(1999, 1, 1))
-        dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
+        dataset = dataset.filter(lambda x: datetime(1999, 1, 1) < x["date_of_creation"] < datetime(2023, 1, 1))
         dataset.save_to_disk(cfg.preprocessed_dataset_path)
 
 
