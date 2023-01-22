@@ -3,18 +3,13 @@ import os
 from datetime import datetime
 
 import click
-import numpy as np
 import torch
-import torch.optim as optim
 import yaml
 from datasets import load_dataset, DatasetDict
 from dotmap import DotMap
-from torch import nn
 from transformers import AutoTokenizer, AutoModel
-from tqdm import tqdm
 
-from batched_iterator import BatchedIterator, BatchedIterator2
-from classifier import SimpleClassifier
+from batched_iterator import BatchedIterator2
 from combined_model import CombinedModel
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,21 +29,24 @@ def _process_data(batch):
 
     return batch
 
+
 def tokenize_data(batch):
     inputs = tokenizer(batch['article'], padding='max_length', truncation=True, max_length=512)
     input_ids = torch.tensor(inputs.input_ids).to('cuda')
     attention_mask = torch.tensor(inputs.attention_mask).to('cuda')
     output = bert_model(input_ids=torch.tensor(input_ids),
-                   attention_mask=torch.tensor(attention_mask))
+                        attention_mask=torch.tensor(attention_mask))
     batch['cls_token'] = list(output.pooler_output)
     batch['start_token'] = list(output.last_hidden_state[:, 0, :])
     batch['avg_token'] = list(torch.mean(output.last_hidden_state, dim=1))
 
     return batch
 
+
 tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
 bert_model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
 bert_model.eval()
+
 
 def load_data(descartes=True):
     dataset = load_dataset("SZTAKI-HLT/HunSum-1")
@@ -68,7 +66,7 @@ def load_data(descartes=True):
     return dataset, class_label
 
 
-def main_main(cfg):
+def run_training(cfg):
     result = {"start_time": datetime.now()}
 
     if cfg.load_tokenized_data:
@@ -125,20 +123,12 @@ def main_main(cfg):
 @click.command()
 @click.argument('config_file')
 @click.option('--input_type', default='cls_token,start_token,avg_token')
-@click.option('--filter_data', default=False)
-def main(config_file, input_type, filter_data):
-    if filter_data:
-        cfg = get_config_from_yaml(config_file)
-        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path)
-        dataset = dataset.filter(lambda x: datetime(1999, 1, 1) < x["date_of_creation"] < datetime(2023, 1, 1))
-        dataset.save_to_disk(cfg.preprocessed_dataset_path_filtered)
-
-
+def main(config_file, input_type):
     if os.path.isdir(config_file):
         configs = glob.glob(config_file + "/*")
         for i, config_f in enumerate(configs):
             cfg = get_config_from_yaml(config_f)
-            result = main_main(cfg)
+            result = run_training(cfg)
             with open(os.path.join(cfg.training_dir, str(i), "result.yaml"), 'w+') as file:
                 yaml.dump(result, file)
     else:
@@ -147,11 +137,9 @@ def main(config_file, input_type, filter_data):
             types = input_type.split(',')
             for type in types:
                 cfg["input_name"] = type
-                result = main_main(cfg)
+                result = run_training(cfg)
                 with open(os.path.join(cfg.training_dir, f"result_{type}.yaml"), 'w+') as file:
                     yaml.dump(result, file)
-
-
 
 
 if __name__ == '__main__':

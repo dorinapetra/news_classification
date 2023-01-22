@@ -1,13 +1,11 @@
 import os
-import sys
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
-import torch.nn.functional as F
-from sklearn.metrics import r2_score
 
 
 class CombinedModel(torch.nn.Module):
