@@ -1,6 +1,7 @@
 
 # data
 preprocessed_dataset_path: /dir
+preprocessed_dataset_path_filtered: /dir
 load_tokenized_data: False
 # cls_token, avg_token, start_token
 input_name: cls_token
