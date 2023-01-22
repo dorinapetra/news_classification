@@ -125,8 +125,8 @@ def main_main(cfg):
 @click.command()
 @click.argument('config_file')
 @click.option('lr', default=None)
-@click.argument('n_layer=')
-def main(config_file, lr):
+@click.option('n_layer', default=None)
+def main(config_file, lr, n_layer):
     if os.path.isdir(config_file):
         configs = glob.glob(config_file + "/*")
         for i, config_f in enumerate(configs):
