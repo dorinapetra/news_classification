@@ -45,21 +45,20 @@ Az év regressziónál a számok nagysága miatt, standardizáltuk a számokat a
 - batch_size: 200
 - hidden_dim: 100
 - rejtett rétegek száma: 4
-- epochs: ?
 
 Az adatból kétfélét próbáltunk ki:
 - Az eredeti [HunSum-1](https://huggingface.co/datasets/SZTAKI-HLT/HunSum-1) adatot
 - A `HunSum-1` egy olyan változatát ahol kiegyenlítettük a domain-eket és kidobtuk azokat amikből nagyon kevés volt.
 
-### Eredeti `HunSum-1` adat eredményei:
+### Eredeti `HunSum-1` adat eredményei a teszt adaton:
 
-|             | accuracy | R2 score  | cls loss | reg loss | sum loss |
-|-------------|----------|-----------|----------|----------|----------|
-| cls_token   | x        | x         | x        | x        | x        |
-| start_token | x        | x         | x        | x        | x        |
-| avg_token   | x        | x         | x        | x        | x        |
+|             | accuracy     | R2 score   | cls loss | reg loss | sum loss |
+|-------------|--------------|------------|----------|----------|----------|
+| cls_token   | 69.12%       | 73.23%     | 1.68     | 1.48     | 3.16     |
+| start_token | **73.66%**   | **76.69%** | **1.63** | **1.29** | **2.93** |
+| avg_token   | 64.15%       | 73.00%     | 1.73     | 1.49     | 3.22     |
 
-### Módosított `HunSum-1` adat eredményei:
+### Módosított `HunSum-1` adat eredményei a teszt adaton:
 
 |             | accuracy | R2 score  | cls loss | reg loss | sum loss |
 |-------------|----------|-----------|----------|----------|----------|
