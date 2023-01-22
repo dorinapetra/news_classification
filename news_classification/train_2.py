@@ -125,7 +125,17 @@ def main_main(cfg):
 @click.command()
 @click.argument('config_file')
 @click.option('--input_type', default='cls_token,start_token,avg_token')
-def main(config_file, input_type):
+@click.option('--filter_data', default=False)
+def main(config_file, input_type, filter_data):
+    if filter_data:
+        cfg = get_config_from_yaml(config_file)
+        dataset = DatasetDict.load_from_disk(cfg.preprocessed_dataset_path).remove_columns(
+            ['date_of_creation']).with_format("torch", device=device)
+        dataset = dataset.filter(lambda x: x["date_of_creation"] > datetime(1999, 1, 1))
+        dataset = dataset.filter(lambda x: x["date_of_creation"] < datetime(2023, 1, 1))
+        dataset.save_to_disk(cfg.preprocessed_dataset_path)
+
+
     if os.path.isdir(config_file):
         configs = glob.glob(config_file + "/*")
         for i, config_f in enumerate(configs):
