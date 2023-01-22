@@ -1,10 +1,11 @@
 # news_classification
 
-Hiperparaméterek:
-dropout: 0.3
-learning_rate: 0.005
-batch_size: 500000
-hidden_dim: 510
+## Hiperparaméterek:
+- dropout: 0.3
+- learning_rate: 0.005
+- batch_size: 500000
+- hidden_dim: 510
+- layerek száma: 1
 
 ### csak domain predict a teljes adatra
 - 79,6% cls_token
