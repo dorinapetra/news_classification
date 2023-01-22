@@ -46,9 +46,7 @@ Az év regressziónál a számok nagysága miatt, standardizáltuk a számokat a
 - hidden_dim: 100
 - rejtett rétegek száma: 4
 
-Az adatból kétfélét próbáltunk ki:
-- Az eredeti [HunSum-1](https://huggingface.co/datasets/SZTAKI-HLT/HunSum-1) adatot
-- A `HunSum-1` egy olyan változatát ahol kiegyenlítettük a domain-eket és kidobtuk azokat amikből nagyon kevés volt.
+Az adatból itt csak az eredetit próbáltunk ki.
 
 ### Eredeti `HunSum-1` adat eredményei a teszt adaton:
 
@@ -58,10 +56,10 @@ Az adatból kétfélét próbáltunk ki:
 | start_token | **73.66%**   | **76.69%** | **1.63** | **1.29** | **2.93** |
 | avg_token   | 64.15%       | 73.00%     | 1.73     | 1.49     | 3.22     |
 
-### Módosított `HunSum-1` adat eredményei a teszt adaton:
+## Összegzés
 
-|             | accuracy | R2 score  | cls loss | reg loss | sum loss |
-|-------------|----------|-----------|----------|----------|----------|
-| cls_token   | x        | x         | x        | x        | x        |
-| start_token | x        | x         | x        | x        | x        |
-| avg_token   | x        | x         | x        | x        | x        |
+Az első verziónál az a tapasztalat, hogy ezzel az architektúrával nem sikerült jó modellt készítenünk. Próbálkoztunk több rejtett réteggel, a rejtett réteg dimenziójának a változtatásával, de 36% fölé nem ment a pontosság. Ennek az egyik oka, hogy nagyon sokféle osztály van (45 a csökkentett adatban). A másik ok, hogy ha a háló egy `origo-2003`-as bemenetre `origo-2002`-t vagy `telex-2020`-at prediktál az ugyanolyan rossznak tűnik, pedig az első érték nagyon közel van a valósághoz.
+
+A második architektúra ebből a szempontból sokkal jobban működött, ott 73%-nál nagyobb pontosságot tudtunk elérni mindkét kimenetnél. 
+
+A bemenetet tekintve meglepő módon a b `start_token` érte el a legjobb eredményeket, nem pedig az erre szánt `cls_token`. A legrosszabb pedig ahogy várható volt az `avg_token` volt, viszont ez sem volt annyira lemaradva a többitől.
