@@ -145,13 +145,13 @@ class CombinedModel(torch.nn.Module):
 
         result["train_acc"] = all_train_acc[best_epoch]
         result["train_loss"] = all_train_loss[best_epoch]
-        result['train_r2'] = all_train_r2[best_epoch]
+        result['train_r2'] = str(all_train_r2[best_epoch])
         result["dev_acc"] = all_dev_acc[best_epoch]
         result["dev_loss"] = all_dev_loss[best_epoch]
-        result['dev_r2'] = all_dev_r2[best_epoch]
+        result['dev_r2'] = str(all_dev_r2[best_epoch])
         result["test_acc"] = test_acc
         result["test_loss"] = test_loss
-        result['test_r2'] = test_r2.float()
+        result['test_r2'] = str(test_r2.float())
         result['epochs'] = best_epoch
 
         return result

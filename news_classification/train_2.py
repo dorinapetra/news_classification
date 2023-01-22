@@ -111,8 +111,8 @@ def main_main(cfg):
     train_result = model.learn(train_iter, dev_X, dev_y1, dev_y2, test_X, test_y1, test_y2, cfg)
     result["running_time"] = (datetime.now() - result["start_time"]).total_seconds()
     result['num_classes'] = len(classes)
-    result['min_year'] = min_year.float()
-    result['max_year'] = max_year.float()
+    result['min_year'] = str(min_year.float())
+    result['max_year'] = str(max_year.float())
     result['classes'] = classes
     result["train_result"] = train_result
     result["learning_rate"] = cfg.learning_rate
@@ -124,7 +124,9 @@ def main_main(cfg):
 
 @click.command()
 @click.argument('config_file')
-def main(config_file):
+@click.option('lr', default=None)
+@click.argument('n_layer=')
+def main(config_file, lr):
     if os.path.isdir(config_file):
         configs = glob.glob(config_file + "/*")
         for i, config_f in enumerate(configs):
