@@ -91,7 +91,6 @@ class CombinedModel(torch.nn.Module):
                 train_correct += torch.eq(train_pred_1, batch_y1).sum().float()
                 train_losses += len(batch_x) * train_loss.item()
                 train_r2_losses += len(batch_x) * self.r2_loss(train_out_2.detach(), batch_y2.unsqueeze(1).detach())
-                # train_acc_1 = float(torch.eq(train_pred_1, train_y1).sum().float() / len(train_X))
                 del train_loss_1
                 del train_loss_2
                 del train_loss
@@ -109,9 +108,6 @@ class CombinedModel(torch.nn.Module):
             dev_loss = dev_loss_1 + dev_loss_2
             all_dev_loss.append(dev_loss.item())
             dev_pred = dev_out_1.max(axis=1)[1]
-            print(dev_pred[:10])
-            print(dev_y1[:10])
-            print('-----------------')
             dev_acc = float(torch.eq(dev_pred, dev_y1).sum().float() / len(dev_X))
             dev_r2 = self.r2_loss(dev_out_2.detach(), dev_y2.unsqueeze(1).detach())
             all_dev_acc.append(dev_acc)
@@ -151,6 +147,7 @@ class CombinedModel(torch.nn.Module):
         result['dev_r2'] = str(all_dev_r2[best_epoch])
         result["test_acc"] = test_acc
         result["test_loss"] = test_loss
+        result["test_sep_loss"] = [test_loss_1.item(), test_loss_2.item()]
         result['test_r2'] = str(test_r2.float())
         result['epochs'] = best_epoch
 
