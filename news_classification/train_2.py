@@ -124,9 +124,8 @@ def main_main(cfg):
 
 @click.command()
 @click.argument('config_file')
-@click.option('--lr', default=None)
-@click.option('--n_layer', default=None)
-def main(config_file, lr, n_layer):
+@click.option('--input_type', default='cls_token,start_token,avg_token')
+def main(config_file, input_type):
     if os.path.isdir(config_file):
         configs = glob.glob(config_file + "/*")
         for i, config_f in enumerate(configs):
@@ -136,9 +135,13 @@ def main(config_file, lr, n_layer):
                 yaml.dump(result, file)
     else:
         cfg = get_config_from_yaml(config_file)
-        result = main_main(cfg)
-        with open(os.path.join(cfg.training_dir, "result.yaml"), 'w+') as file:
-            yaml.dump(result, file)
+        if input_type is not None:
+            types = input_type.split(',')
+            for type in types:
+                cfg["input_name"] = type
+                result = main_main(cfg)
+                with open(os.path.join(cfg.training_dir, f"result_{type}.yaml"), 'w+') as file:
+                    yaml.dump(result, file)
 
 
 
