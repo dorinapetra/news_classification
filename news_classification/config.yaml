@@ -1,0 +1,20 @@
+
+# data
+preprocessed_dataset_path: /dir
+load_tokenized_data: False
+# cls_token, avg_token, start_token
+input_name: cls_token
+output_name: label
+# model
+hidden_dim: 100
+n_layer: 1
+
+only_domain: False
+
+# training
+training_dir: /dir
+dropout: 0.5
+batch_size: 32
+epochs: 10
+patience: 7
+learning_rate: 0.001
